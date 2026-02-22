@@ -1,0 +1,1702 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FitTrack Pro</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg2: #161922;
+  --bg3: #1e2230;
+  --bg4: #252a3a;
+  --accent: #00e5a0;
+  --accent2: #0088ff;
+  --danger: #ff4d6d;
+  --warn: #ffb830;
+  --purple: #a855f7;
+  --text: #f0f4ff;
+  --text2: #7a8299;
+  --border: rgba(255,255,255,0.07);
+  --radius: 18px;
+  --shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Manrope', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body::before {
+  content: '';
+  position: fixed; top: -200px; right: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+body::after {
+  content: '';
+  position: fixed; bottom: -200px; left: -200px;
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,136,255,0.07) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(13,15,20,0.92);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 18px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.logo {
+  font-family: 'Space Mono', monospace;
+  font-size: 17px; font-weight: 700;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+.streak-badge {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,184,48,0.15); border: 1px solid rgba(255,184,48,0.3);
+  border-radius: 20px; padding: 4px 10px;
+  font-size: 12px; font-weight: 700; color: var(--warn);
+}
+.header-date { font-size: 11px; color: var(--text2); }
+
+.nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+  background: rgba(22,25,34,0.96);
+  backdrop-filter: blur(24px);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding: 6px 0 env(safe-area-inset-bottom, 6px);
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; gap: 3px;
+  background: none; border: none; cursor: pointer;
+  color: var(--text2); font-family: 'Manrope', sans-serif;
+  font-size: 9px; font-weight: 700; padding: 5px 0;
+  transition: color 0.2s;
+}
+.nav-btn .icon { font-size: 20px; transition: transform 0.2s; }
+.nav-btn.active { color: var(--accent); }
+.nav-btn.active .icon { transform: translateY(-2px); }
+
+main {
+  padding: 14px 14px 88px;
+  position: relative; z-index: 1;
+  max-width: 480px; margin: 0 auto;
+}
+
+.section { display: none; animation: fadeIn 0.25s ease; }
+.section.active { display: block; }
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card-title {
+  font-size: 11px; font-weight: 700;
+  color: var(--text2); text-transform: uppercase;
+  letter-spacing: 1.5px; margin-bottom: 14px;
+}
+.card-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.ring-wrap { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; }
+.ring-container { position: relative; width: 106px; height: 106px; flex-shrink: 0; }
+.ring-svg { width: 106px; height: 106px; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: var(--bg3); stroke-width: 9; }
+.ring-fill {
+  fill: none; stroke: var(--accent); stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset 1s ease, stroke 0.5s;
+}
+.ring-text {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.ring-percent { font-size: 21px; font-weight: 800; color: var(--accent); }
+.ring-label { font-size: 8px; color: var(--text2); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.mini-stats { flex: 1; display: flex; flex-direction: column; gap: 9px; }
+.mini-stat-row { display: flex; align-items: center; gap: 8px; }
+.mini-stat-icon { font-size: 15px; width: 26px; text-align: center; }
+.mini-stat-label { font-size: 10px; color: var(--text2); }
+.mini-stat-val { font-size: 13px; font-weight: 700; }
+
+.balance-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg3); border-radius: 12px; padding: 12px 16px;
+  margin-bottom: 12px;
+}
+.balance-label { font-size: 11px; color: var(--text2); }
+.balance-val { font-size: 18px; font-weight: 800; }
+.balance-sub { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.balance-deficit { color: var(--accent); }
+.balance-surplus { color: var(--warn); }
+.balance-over { color: var(--danger); }
+
+.macros-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.macro-card { background: var(--bg3); border-radius: 12px; padding: 11px; text-align: center; }
+.macro-val { font-size: 19px; font-weight: 800; }
+.macro-goal { font-size: 10px; color: var(--text2); }
+.macro-label { font-size: 10px; color: var(--text2); margin-top: 1px; }
+.macro-prog { margin-top: 7px; }
+.c-protein { color: #ff6b6b; }
+.c-fat { color: #ffd93d; }
+.c-carb { color: var(--accent2); }
+
+.prog-bar { height: 5px; background: var(--bg4); border-radius: 3px; overflow: hidden; margin-top: 4px; }
+.prog-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; width: 0%; }
+
+.ai-tips { display: flex; flex-direction: column; gap: 8px; }
+.ai-tip {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: var(--bg3); border-radius: 10px; padding: 10px 12px;
+  border-left: 3px solid var(--accent);
+  font-size: 12px; line-height: 1.5;
+}
+.ai-tip.warn { border-left-color: var(--warn); }
+.ai-tip.danger { border-left-color: var(--danger); }
+.ai-tip.info { border-left-color: var(--accent2); }
+.ai-tip-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+.forecast-card {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, rgba(0,229,160,0.07), rgba(0,136,255,0.07));
+  border: 1px solid rgba(0,229,160,0.15);
+  border-radius: 12px; padding: 14px 16px;
+}
+.forecast-val { font-size: 24px; font-weight: 800; color: var(--accent); }
+.forecast-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+.water-display { text-align: center; padding: 8px 0; }
+.water-amount { font-size: 38px; font-weight: 800; font-family: 'Space Mono', monospace; color: var(--accent2); }
+.water-unit { font-size: 13px; color: var(--text2); }
+.water-btns { display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap; justify-content: center; }
+.water-btn {
+  padding: 7px 13px; border-radius: 20px;
+  background: rgba(0,136,255,0.12); border: 1px solid rgba(0,136,255,0.25);
+  color: var(--accent2); font-weight: 700; cursor: pointer; font-size: 12px;
+  transition: background 0.2s; font-family: 'Manrope', sans-serif;
+}
+.water-btn:active { background: rgba(0,136,255,0.3); }
+
+.input-group { margin-bottom: 9px; }
+.input-label { font-size: 11px; color: var(--text2); font-weight: 600; margin-bottom: 4px; display: block; }
+input, select, textarea {
+  width: 100%; padding: 11px 13px;
+  background: var(--bg3); color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px; font-family: 'Manrope', sans-serif; font-size: 14px;
+  outline: none; transition: border-color 0.2s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus { border-color: var(--accent); }
+select option { background: var(--bg2); }
+input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.btn {
+  display: block; width: 100%; padding: 13px;
+  border: none; border-radius: 12px; cursor: pointer;
+  font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 700;
+  transition: transform 0.12s, opacity 0.12s;
+  -webkit-appearance: none;
+}
+.btn:active { transform: scale(0.97); opacity: 0.88; }
+.btn-primary { background: linear-gradient(135deg, var(--accent), #00b37a); color: #061a10; }
+.btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+.btn-sm {
+  padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+  font-family: 'Manrope', sans-serif; font-size: 12px; font-weight: 700;
+  transition: transform 0.12s;
+}
+.btn-sm:active { transform: scale(0.95); }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+
+.search-wrap { position: relative; }
+.search-results {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 50;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-top: none; border-radius: 0 0 12px 12px;
+  max-height: 200px; overflow-y: auto;
+}
+.search-item {
+  padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.search-item:last-child { border-bottom: none; }
+.search-item:hover, .search-item:active { background: var(--bg3); }
+.search-item-name { font-size: 13px; font-weight: 600; }
+.search-item-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.search-loader { padding: 14px; text-align: center; color: var(--text2); font-size: 12px; }
+
+.food-list { display: flex; flex-direction: column; gap: 7px; }
+.food-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg3); border-radius: 10px; padding: 10px 13px;
+  animation: slideIn 0.2s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.food-item-name { font-size: 13px; font-weight: 600; }
+.food-item-meta { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.food-item-kcal { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--accent); font-weight: 700; }
+.food-del { background: none; border: none; color: var(--text2); font-size: 17px; cursor: pointer; padding: 0 0 0 8px; line-height: 1; }
+
+.timer-display {
+  font-family: 'Space Mono', monospace;
+  font-size: 46px; font-weight: 700; text-align: center;
+  color: var(--accent); letter-spacing: 4px; padding: 8px 0;
+}
+.timer-btns { display: flex; gap: 8px; }
+
+.workout-list { display: flex; flex-direction: column; gap: 8px; }
+.workout-item {
+  background: var(--bg3); border-radius: 12px; padding: 13px;
+  border-left: 3px solid var(--accent);
+  animation: slideIn 0.2s ease;
+}
+.workout-name { font-weight: 700; font-size: 14px; }
+.workout-meta { font-size: 11px; color: var(--text2); margin-top: 3px; }
+.workout-stats { display: flex; gap: 12px; margin-top: 7px; }
+.workout-stat { font-size: 11px; color: var(--accent); font-weight: 600; }
+
+.measures-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 12px; }
+.measure-card {
+  background: var(--bg3); border-radius: 12px; padding: 12px;
+  text-align: center; border: 1px solid var(--border);
+}
+.measure-val { font-size: 22px; font-weight: 800; color: var(--accent); font-family: 'Space Mono', monospace; }
+.measure-label { font-size: 10px; color: var(--text2); margin-top: 2px; }
+.measure-change { font-size: 11px; font-weight: 700; margin-top: 4px; }
+.change-good { color: var(--accent); }
+.change-bad { color: var(--danger); }
+.change-neutral { color: var(--text2); }
+
+.history-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.history-table th {
+  color: var(--text2); font-size: 10px; text-transform: uppercase;
+  letter-spacing: 1px; padding: 6px 4px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.history-table td { padding: 8px 4px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.history-table tr:last-child td { border-bottom: none; }
+
+.profile-avatar {
+  width: 60px; height: 60px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin: 0 auto 10px;
+}
+.bmi-badge {
+  display: inline-block; padding: 3px 11px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; margin-top: 6px;
+}
+.bmi-normal { background: rgba(0,229,160,0.12); color: var(--accent); }
+.bmi-over   { background: rgba(255,184,48,0.12); color: var(--warn); }
+.bmi-obese  { background: rgba(255,77,109,0.12); color: var(--danger); }
+.bmi-under  { background: rgba(0,136,255,0.12); color: var(--accent2); }
+
+.achievements { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; }
+.ach-item {
+  background: var(--bg3); border-radius: 12px; padding: 12px;
+  text-align: center; border: 1px solid var(--border);
+  opacity: 0.35; transition: opacity 0.4s, border-color 0.4s;
+}
+.ach-item.earned { opacity: 1; border-color: rgba(0,229,160,0.35); }
+.ach-icon { font-size: 26px; }
+.ach-name { font-size: 9px; color: var(--text2); margin-top: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.toast {
+  position: fixed; top: 16px; left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  background: var(--accent); color: #061a10;
+  padding: 11px 20px; border-radius: 30px; font-weight: 700; font-size: 13px;
+  z-index: 999; transition: transform 0.3s cubic-bezier(.34,1.56,.64,1);
+  white-space: nowrap; box-shadow: 0 8px 24px rgba(0,229,160,0.3);
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+.section-header { margin-bottom: 14px; }
+.section-title { font-size: 18px; font-weight: 800; }
+.section-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+
+.pills { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 12px; }
+.pill {
+  padding: 6px 14px; border-radius: 20px; cursor: pointer;
+  background: var(--bg3); border: 1px solid var(--border);
+  font-size: 12px; font-weight: 700; color: var(--text2);
+  transition: all 0.2s; font-family: 'Manrope', sans-serif;
+}
+.pill.active { background: rgba(0,229,160,0.12); border-color: rgba(0,229,160,0.4); color: var(--accent); }
+
+.empty-state { text-align: center; color: var(--text2); padding: 24px; font-size: 13px; }
+.empty-state .empty-icon { font-size: 36px; margin-bottom: 8px; }
+
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">⚡ FitTrack</div>
+  <div class="header-right">
+    <div class="streak-badge" id="streakBadge">🔥 0 дн</div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+</header>
+
+<main>
+
+<!-- ГЛАВНАЯ -->
+<div id="tab-home" class="section active">
+  <div class="section-header">
+    <div class="section-title" id="greetTitle">Привет! 👋</div>
+    <div class="section-sub" id="homeGreet">Загрузка...</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Сегодня</div>
+    <div class="ring-wrap">
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 100 100">
+          <circle class="ring-bg" cx="50" cy="50" r="45"/>
+          <circle class="ring-fill" id="ringFill" cx="50" cy="50" r="45"/>
+        </svg>
+        <div class="ring-text">
+          <div class="ring-percent" id="ringPercent">0%</div>
+          <div class="ring-label">от нормы</div>
+        </div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini-stat-row">
+          <div class="mini-stat-icon">🔥</div>
+          <div>
+            <div class="mini-stat-label">Калории</div>
+            <div class="mini-stat-val" id="calorieStatHome">0 / 0 ккал</div>
+          </div>
+        </div>
+        <div class="mini-stat-row">
+          <div class="mini-stat-icon">💧</div>
+          <div>
+            <div class="mini-stat-label">Вода</div>
+            <div class="mini-stat-val" id="waterStatHome">0 / 2000 мл</div>
+          </div>
+        </div>
+        <div class="mini-stat-row">
+          <div class="mini-stat-icon">🏋️</div>
+          <div>
+            <div class="mini-stat-label">Тренировки</div>
+            <div class="mini-stat-val" id="workoutStatHome">0 сегодня</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="balance-card" id="balanceCard">
+      <div>
+        <div class="balance-label">⚖️ Баланс калорий</div>
+        <div class="balance-val" id="balanceVal">—</div>
+        <div class="balance-sub" id="balanceSub">Нет данных</div>
+      </div>
+      <div style="text-align:right">
+        <div class="balance-label">📉 Прогноз на 30 дней</div>
+        <div style="font-size:16px;font-weight:800;color:var(--accent2)" id="forecastVal">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Макронутриенты (БЖУ)</div>
+    <div class="macros-grid">
+      <div class="macro-card">
+        <div class="macro-val c-protein" id="proteinEaten">0г</div>
+        <div class="macro-goal" id="proteinGoalLbl">/ 0г</div>
+        <div class="macro-label">Белки</div>
+        <div class="macro-prog">
+          <div class="prog-bar"><div class="prog-fill" id="proteinBar" style="background:linear-gradient(90deg,#ff6b6b,#ff4d6d)"></div></div>
+        </div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val c-fat" id="fatEaten">0г</div>
+        <div class="macro-goal" id="fatGoalLbl">/ 0г</div>
+        <div class="macro-label">Жиры</div>
+        <div class="macro-prog">
+          <div class="prog-bar"><div class="prog-fill" id="fatBar" style="background:linear-gradient(90deg,#ffd93d,#ffb830)"></div></div>
+        </div>
+      </div>
+      <div class="macro-card">
+        <div class="macro-val c-carb" id="carbEaten">0г</div>
+        <div class="macro-goal" id="carbGoalLbl">/ 0г</div>
+        <div class="macro-label">Углеводы</div>
+        <div class="macro-prog">
+          <div class="prog-bar"><div class="prog-fill" id="carbBar" style="background:linear-gradient(90deg,#0088ff,#00b4ff)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💧 Вода</div>
+    <div class="water-display">
+      <div class="water-amount" id="waterAmount">0</div>
+      <div class="water-unit">мл из <span id="waterGoalLbl">2000</span> мл</div>
+      <div class="prog-bar" style="margin-top:10px">
+        <div class="prog-fill" id="waterBar" style="background:linear-gradient(90deg,#0088ff,#00d4ff)"></div>
+      </div>
+    </div>
+    <div class="water-btns">
+      <button class="water-btn" id="wBtn150">+150</button>
+      <button class="water-btn" id="wBtn250">+250</button>
+      <button class="water-btn" id="wBtn350">+350</button>
+      <button class="water-btn" id="wBtn500">+500 мл</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🤖 Умные советы</div>
+    <div class="ai-tips" id="aiTips">
+      <div class="empty-state">
+        <div>Заполни профиль и добавь еду —<br>получишь персональные советы 💡</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ПИТАНИЕ -->
+<div id="tab-food" class="section">
+  <div class="section-header">
+    <div class="section-title">🍽 Питание</div>
+    <div class="section-sub">Дневник питания</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🔍 Поиск продуктов (база Open Food Facts)</div>
+    <div class="search-wrap">
+      <input id="foodSearch" placeholder="Введи название продукта..." autocomplete="off"/>
+      <div class="search-results" id="searchResults" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title-row">
+      <span class="card-title" style="margin:0">Добавить вручную</span>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Название</label>
+      <input id="f_name" placeholder="Куриная грудка"/>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Приём пищи</label>
+      <select id="f_meal">
+        <option value="breakfast">🌅 Завтрак</option>
+        <option value="lunch">☀️ Обед</option>
+        <option value="dinner">🌙 Ужин</option>
+        <option value="snack">🍎 Перекус</option>
+      </select>
+    </div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Калории (ккал)</label>
+        <input id="f_cal" type="number" placeholder="300"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Порция (г)</label>
+        <input id="f_grams" type="number" placeholder="200"/>
+      </div>
+    </div>
+    <div class="grid-3">
+      <div class="input-group">
+        <label class="input-label">Белки (г)</label>
+        <input id="f_protein" type="number" placeholder="30"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Жиры (г)</label>
+        <input id="f_fat" type="number" placeholder="5"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Углеводы (г)</label>
+        <input id="f_carb" type="number" placeholder="0"/>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="addFoodBtn">+ Добавить</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Съедено сегодня</div>
+    <div class="food-list" id="foodList">
+      <div class="empty-state"><div class="empty-icon">🍽</div><div>Ничего не добавлено</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ТРЕНИРОВКИ -->
+<div id="tab-workout" class="section">
+  <div class="section-header">
+    <div class="section-title">💪 Тренировки</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">⏱ Таймер тренировки</div>
+    <div class="timer-display" id="timerDisplay">00:00</div>
+    <div class="timer-btns">
+      <button class="btn btn-primary" id="timerBtn">▶ Старт</button>
+      <button class="btn btn-secondary" id="timerResetBtn" style="width:auto;padding:13px 20px">↺</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Добавить тренировку</div>
+    <div class="input-group">
+      <label class="input-label">Вид</label>
+      <select id="w_type">
+        <option value="gym">🏋️ Силовая (зал) — MET 5</option>
+        <option value="run">🏃 Бег — MET 8</option>
+        <option value="bike">🚴 Велосипед — MET 7</option>
+        <option value="swim">🏊 Плавание — MET 8</option>
+        <option value="yoga">🧘 Йога — MET 3</option>
+        <option value="hiit">⚡ HIIT — MET 10</option>
+        <option value="walk">🚶 Ходьба — MET 3.5</option>
+        <option value="other">💪 Другое — MET 4</option>
+      </select>
+    </div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Длительность (мин)</label>
+        <input id="w_duration" type="number" placeholder="45"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">🔥 Сожжено ккал</label>
+        <input id="w_burned" type="number" placeholder="авто"/>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:9px">
+      💡 Калории рассчитаются автоматически по формуле MET × вес × время
+    </div>
+    <div class="input-group">
+      <label class="input-label">Заметки</label>
+      <input id="w_notes" placeholder="5×10 жим, 3×12 тяга..."/>
+    </div>
+    <button class="btn btn-primary" id="addWorkoutBtn">+ Добавить тренировку</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">История тренировок</div>
+    <div class="workout-list" id="workoutList">
+      <div class="empty-state"><div class="empty-icon">🏋️</div><div>Тренировок ещё нет</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ЗАМЕРЫ -->
+<div id="tab-measures" class="section">
+  <div class="section-header">
+    <div class="section-title">📏 Замеры тела</div>
+    <div class="section-sub">Отслеживай изменения фигуры</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Сейчас vs прошлый раз</div>
+    <div class="measures-grid" id="measuresDisplay">
+      <div class="measure-card">
+        <div class="measure-val" id="mw-cur">—</div>
+        <div class="measure-label">Вес (кг)</div>
+        <div class="measure-change" id="mw-ch"></div>
+      </div>
+      <div class="measure-card">
+        <div class="measure-val" id="mch-cur">—</div>
+        <div class="measure-label">Грудь (см)</div>
+        <div class="measure-change" id="mch-ch"></div>
+      </div>
+      <div class="measure-card">
+        <div class="measure-val" id="mwa-cur">—</div>
+        <div class="measure-label">Талия (см)</div>
+        <div class="measure-change" id="mwa-ch"></div>
+      </div>
+      <div class="measure-card">
+        <div class="measure-val" id="mhi-cur">—</div>
+        <div class="measure-label">Бёдра (см)</div>
+        <div class="measure-change" id="mhi-ch"></div>
+      </div>
+      <div class="measure-card">
+        <div class="measure-val" id="mar-cur">—</div>
+        <div class="measure-label">Рука (см)</div>
+        <div class="measure-change" id="mar-ch"></div>
+      </div>
+      <div class="measure-card">
+        <div class="measure-val" id="mle-cur">—</div>
+        <div class="measure-label">Нога (см)</div>
+        <div class="measure-change" id="mle-ch"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Добавить замеры сегодня</div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Вес (кг)</label>
+        <input id="ms_weight" type="number" placeholder="75.5"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">% жира (необяз.)</label>
+        <input id="ms_fat_pct" type="number" placeholder="18"/>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Грудь (см)</label>
+        <input id="ms_chest" type="number" placeholder="100"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Талия (см)</label>
+        <input id="ms_waist" type="number" placeholder="80"/>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Бёдра (см)</label>
+        <input id="ms_hips" type="number" placeholder="95"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Рука (см)</label>
+        <input id="ms_arm" type="number" placeholder="35"/>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Нога (см)</label>
+      <input id="ms_leg" type="number" placeholder="55"/>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Заметки</label>
+      <input id="ms_note" placeholder="Чувствую себя хорошо..."/>
+    </div>
+    <button class="btn btn-primary" id="addMeasureBtn">📏 Сохранить замеры</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">График веса + скользящая средняя (7 дней)</div>
+    <canvas id="measureWeightChart" height="180"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Динамика размеров (см)</div>
+    <canvas id="measureSizeChart" height="200"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-title">История замеров</div>
+    <div style="overflow-x:auto">
+      <table class="history-table" id="measuresTable">
+        <thead>
+          <tr><th>Дата</th><th>Вес</th><th>Тал.</th><th>Гр.</th><th>Бёд.</th></tr>
+        </thead>
+        <tbody id="measuresTableBody">
+          <tr><td colspan="5" class="empty-state">Нет данных</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ГРАФИКИ -->
+<div id="tab-stats" class="section">
+  <div class="section-header">
+    <div class="section-title">📊 Статистика</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Калории по дням + цель</div>
+    <canvas id="calorieChart" height="180"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Вода по дням + норма</div>
+    <canvas id="waterChart" height="150"></canvas>
+  </div>
+  <div class="card">
+    <div class="card-title">Скользящая средняя веса (7 дней)</div>
+    <canvas id="weightChart" height="180"></canvas>
+  </div>
+</div>
+
+<!-- ПРОФИЛЬ -->
+<div id="tab-profile" class="section">
+  <div class="section-header">
+    <div class="section-title">👤 Профиль</div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div class="profile-avatar">🧑</div>
+    <div id="profileName" style="font-size:18px;font-weight:800">Мой профиль</div>
+    <div id="bmiResult" style="margin-top:6px"></div>
+    <div id="targetCalDisplay" style="color:var(--text2);font-size:12px;margin-top:5px"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Основные данные</div>
+    <div class="input-group">
+      <label class="input-label">Имя</label>
+      <input id="p_name" placeholder="Твоё имя"/>
+    </div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Вес (кг)</label>
+        <input id="p_weight" type="number" placeholder="75"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Рост (см)</label>
+        <input id="p_height" type="number" placeholder="175"/>
+      </div>
+    </div>
+    <div class="grid-2">
+      <div class="input-group">
+        <label class="input-label">Возраст</label>
+        <input id="p_age" type="number" placeholder="25"/>
+      </div>
+      <div class="input-group">
+        <label class="input-label">% жира (необяз.)</label>
+        <input id="p_fat_pct" type="number" placeholder="20"/>
+      </div>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Пол</label>
+      <select id="p_gender">
+        <option value="male">Мужчина</option>
+        <option value="female">Женщина</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Активность</label>
+      <select id="p_activity">
+        <option value="1.2">😴 Сидячий (почти нет спорта)</option>
+        <option value="1.375">🚶 Лёгкая (1–3 дня/нед)</option>
+        <option value="1.55">🏃 Умеренная (3–5 дней/нед)</option>
+        <option value="1.725">💪 Высокая (6–7 дней/нед)</option>
+        <option value="1.9">⚡ Очень высокая (2×/день)</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Цель</label>
+      <select id="p_goal">
+        <option value="cut">⬇️ Похудение (−400 ккал)</option>
+        <option value="maintain">➡️ Поддержание</option>
+        <option value="bulk">⬆️ Набор массы (+300 ккал)</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Тип питания (для расчёта БЖУ)</label>
+      <select id="p_diet">
+        <option value="balanced">⚖️ Сбалансированное (30/25/45)</option>
+        <option value="highprotein">💪 Высокий белок (40/30/30)</option>
+        <option value="keto">🥑 Кето (20/70/10)</option>
+        <option value="bulk">📈 Набор массы (25/20/55)</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label">Цель по воде (мл/день)</label>
+      <input id="p_water" type="number" placeholder="2000"/>
+    </div>
+    <button class="btn btn-primary" id="saveProfileBtn">💾 Сохранить профиль</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏆 Достижения</div>
+    <div class="achievements">
+      <div class="ach-item" id="ach-first"><div class="ach-icon">🥇</div><div class="ach-name">Первый лог</div></div>
+      <div class="ach-item" id="ach-streak7"><div class="ach-icon">🔥</div><div class="ach-name">7 дней</div></div>
+      <div class="ach-item" id="ach-water"><div class="ach-icon">💧</div><div class="ach-name">Норма воды</div></div>
+      <div class="ach-item" id="ach-workout5"><div class="ach-icon">🏋️</div><div class="ach-name">5 тренировок</div></div>
+      <div class="ach-item" id="ach-calories"><div class="ach-icon">🎯</div><div class="ach-name">Цель ккал</div></div>
+      <div class="ach-item" id="ach-perfect"><div class="ach-icon">⭐</div><div class="ach-name">Идеальный день</div></div>
+      <div class="ach-item" id="ach-measure"><div class="ach-icon">📏</div><div class="ach-name">Первый замер</div></div>
+      <div class="ach-item" id="ach-streak30"><div class="ach-icon">👑</div><div class="ach-name">30 дней</div></div>
+      <div class="ach-item" id="ach-food10"><div class="ach-icon">🍽</div><div class="ach-name">10 продуктов</div></div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<nav class="nav">
+  <button class="nav-btn active" data-tab="home"><span class="icon">🏠</span>Главная</button>
+  <button class="nav-btn" data-tab="food"><span class="icon">🍽</span>Питание</button>
+  <button class="nav-btn" data-tab="workout"><span class="icon">💪</span>Тренировки</button>
+  <button class="nav-btn" data-tab="measures"><span class="icon">📏</span>Замеры</button>
+  <button class="nav-btn" data-tab="stats"><span class="icon">📊</span>Графики</button>
+  <button class="nav-btn" data-tab="profile"><span class="icon">👤</span>Профиль</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================================================================
+   ХРАНИЛИЩЕ — сохраняет данные в браузере (localStorage)
+================================================================ */
+const Storage = {
+  get(key, def = null) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; }
+    catch { return def; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+  }
+};
+
+/* ================================================================
+   ВЫЧИСЛЕНИЯ — все формулы
+================================================================ */
+const Calc = {
+  bmr(p) {
+    if (p.fatPct && p.fatPct > 0 && p.fatPct < 60) {
+      const lbm = p.weight * (1 - p.fatPct / 100);
+      return 370 + 21.6 * lbm;
+    }
+    return p.gender === 'male'
+      ? 10 * p.weight + 6.25 * p.height - 5 * p.age + 5
+      : 10 * p.weight + 6.25 * p.height - 5 * p.age - 161;
+  },
+  tdee(p) { return this.bmr(p) * p.activity; },
+  targetCal(p) {
+    let t = this.tdee(p);
+    if (p.goal === 'cut')  t -= 400;
+    if (p.goal === 'bulk') t += 300;
+    return Math.round(t);
+  },
+  macroGoals(targetCal, dietType) {
+    const ratios = {
+      balanced:   { p: 0.30, f: 0.25, c: 0.45 },
+      highprotein:{ p: 0.40, f: 0.30, c: 0.30 },
+      keto:       { p: 0.20, f: 0.70, c: 0.10 },
+      bulk:       { p: 0.25, f: 0.20, c: 0.55 }
+    };
+    const r = ratios[dietType] || ratios.balanced;
+    return {
+      protein: Math.round(targetCal * r.p / 4),
+      fat:     Math.round(targetCal * r.f / 9),
+      carbs:   Math.round(targetCal * r.c / 4)
+    };
+  },
+  bmi(weight, heightCm) {
+    const h = heightCm / 100;
+    return +(weight / (h * h)).toFixed(1);
+  },
+  weightForecast(currentWeight, dailyBalance) {
+    const change = (dailyBalance * 30) / 7700;
+    return +(currentWeight + change).toFixed(1);
+  },
+  burnedByMet(type, weightKg, durationMin) {
+    const MET = { gym:5, run:8, bike:7, swim:8, yoga:3, hiit:10, walk:3.5, other:4 };
+    return Math.round((MET[type] || 4) * weightKg * (durationMin / 60));
+  },
+  movingAverage(data, n = 7) {
+    return data.map((_, i) => {
+      const slice = data.slice(Math.max(0, i - n + 1), i + 1).filter(v => v > 0);
+      if (!slice.length) return null;
+      return +(slice.reduce((a, b) => a + b, 0) / slice.length).toFixed(1);
+    });
+  },
+  streak(history) {
+    if (!history.length) return 0;
+    let count = 0;
+    const now = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(now); d.setDate(d.getDate() - i);
+      const key = d.toLocaleDateString('ru', { day:'2-digit', month:'2-digit' });
+      const found = history.find(h => h.date === key && (h.calories > 0 || h.water > 0));
+      if (found) count++;
+      else if (i > 0) break;
+    }
+    return count;
+  }
+};
+
+/* ================================================================
+   ПРОФИЛЬ
+================================================================ */
+const Profile = {
+  data: Storage.get('fittrack_profile', {}),
+
+  save() {
+    const w = +document.getElementById('p_weight').value;
+    const h = +document.getElementById('p_height').value;
+    const a = +document.getElementById('p_age').value;
+    if (!w || !h || !a) { UI.toast('Заполни вес, рост и возраст!', 'var(--danger)'); return; }
+
+    const p = {
+      name:     document.getElementById('p_name').value.trim() || 'Спортсмен',
+      weight:   w, height: h, age: a,
+      fatPct:   +document.getElementById('p_fat_pct').value || 0,
+      gender:   document.getElementById('p_gender').value,
+      activity: +document.getElementById('p_activity').value,
+      goal:     document.getElementById('p_goal').value,
+      diet:     document.getElementById('p_diet').value,
+      waterGoal:+document.getElementById('p_water').value || 2000,
+    };
+    p.targetCalories = Calc.targetCal(p);
+    p.bmi = Calc.bmi(w, h);
+
+    this.data = p;
+    Storage.set('fittrack_profile', p);
+    this.renderCard();
+    Dashboard.update();
+    UI.toast('✅ Профиль сохранён!');
+  },
+
+  load() {
+    const p = this.data;
+    if (!p.weight) return;
+    const set = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+    set('p_name', p.name); set('p_weight', p.weight); set('p_height', p.height);
+    set('p_age', p.age);   set('p_fat_pct', p.fatPct); set('p_gender', p.gender);
+    set('p_activity', p.activity); set('p_goal', p.goal);
+    set('p_diet', p.diet || 'balanced'); set('p_water', p.waterGoal);
+    this.renderCard();
+  },
+
+  renderCard() {
+    const p = this.data; if (!p.weight) return;
+    document.getElementById('profileName').textContent = p.name || 'Спортсмен';
+    if (p.bmi) {
+      const cls = p.bmi < 18.5 ? 'bmi-under' : p.bmi < 25 ? 'bmi-normal' : p.bmi < 30 ? 'bmi-over' : 'bmi-obese';
+      const txt = p.bmi < 18.5 ? 'Недовес' : p.bmi < 25 ? 'Норма' : p.bmi < 30 ? 'Избыток' : 'Ожирение';
+      document.getElementById('bmiResult').innerHTML = `<span class="bmi-badge ${cls}">ИМТ ${p.bmi} — ${txt}</span>`;
+    }
+    if (p.targetCalories)
+      document.getElementById('targetCalDisplay').textContent = `🔥 Норма: ${p.targetCalories} ккал/день`;
+  }
+};
+
+/* ================================================================
+   ДАННЫЕ ЗА СЕГОДНЯ
+================================================================ */
+const TODAY_KEY = new Date().toDateString();
+const TodayData = {
+  data: null,
+  init() {
+    const raw = Storage.get('fittrack_today', {});
+    if (raw.date !== TODAY_KEY)
+      this.data = { date: TODAY_KEY, foods: [], workouts: [], water: 0, calories: 0, protein: 0, fat: 0, carbs: 0 };
+    else
+      this.data = raw;
+  },
+  save() {
+    Storage.set('fittrack_today', this.data);
+    this._saveHistory();
+  },
+  _saveHistory() {
+    const key = new Date().toLocaleDateString('ru', { day:'2-digit', month:'2-digit' });
+    let hist = Storage.get('fittrack_history', []);
+    const idx = hist.findIndex(h => h.date === key);
+    const entry = { date: key, calories: this.data.calories, water: this.data.water, weight: Profile.data.weight || 0 };
+    if (idx >= 0) hist[idx] = { ...hist[idx], ...entry };
+    else hist.push(entry);
+    if (hist.length > 90) hist = hist.slice(-90);
+    Storage.set('fittrack_history', hist);
+  }
+};
+
+/* ================================================================
+   ДАШБОРД — обновляет главный экран
+================================================================ */
+const Dashboard = {
+  update() {
+    const td = TodayData.data;
+    const p  = Profile.data;
+    const target = p.targetCalories || 2000;
+    const waterGoal = p.waterGoal || 2000;
+    const diet = p.diet || 'balanced';
+
+    const pct = Math.min(100, Math.round(td.calories / target * 100));
+    const offset = 283 - 283 * pct / 100;
+    const ring = document.getElementById('ringFill');
+    ring.style.strokeDashoffset = offset;
+    ring.style.stroke = pct > 110 ? 'var(--danger)' : pct > 90 ? 'var(--warn)' : 'var(--accent)';
+    document.getElementById('ringPercent').textContent = pct + '%';
+
+    document.getElementById('calorieStatHome').textContent = td.calories + ' / ' + target + ' ккал';
+    document.getElementById('waterStatHome').textContent   = td.water   + ' / ' + waterGoal + ' мл';
+    document.getElementById('workoutStatHome').textContent = td.workouts.length + ' сегодня';
+
+    const balance = td.calories - target;
+    const balEl  = document.getElementById('balanceVal');
+    const balSub = document.getElementById('balanceSub');
+    if (td.calories === 0) {
+      balEl.textContent = '—'; balSub.textContent = 'Добавь еду'; balEl.className = 'balance-val';
+    } else if (balance < 0) {
+      balEl.textContent = balance + ' ккал'; balEl.className = 'balance-val balance-deficit';
+      balSub.textContent = p.goal === 'cut' ? '✅ Дефицит — идёшь к цели' : '📉 Дефицит';
+    } else if (balance > 500) {
+      balEl.textContent = '+' + balance + ' ккал'; balEl.className = 'balance-val balance-over';
+      balSub.textContent = '⚠️ Большой профицит';
+    } else {
+      balEl.textContent = '+' + balance + ' ккал'; balEl.className = 'balance-val balance-surplus';
+      balSub.textContent = p.goal === 'bulk' ? '✅ Профицит — идёшь к цели' : '📈 Профицит';
+    }
+
+    const forecastEl = document.getElementById('forecastVal');
+    if (p.weight && td.calories > 0) {
+      const forecast = Calc.weightForecast(p.weight, balance);
+      const diff = +(forecast - p.weight).toFixed(1);
+      forecastEl.textContent = forecast + ' кг (' + (diff > 0 ? '+' : '') + diff + ')';
+    } else {
+      forecastEl.textContent = '—';
+    }
+
+    const goals = Calc.macroGoals(target, diet);
+    document.getElementById('proteinEaten').textContent = td.protein + 'г';
+    document.getElementById('fatEaten').textContent     = td.fat     + 'г';
+    document.getElementById('carbEaten').textContent    = td.carbs   + 'г';
+    document.getElementById('proteinGoalLbl').textContent = '/ ' + goals.protein + 'г';
+    document.getElementById('fatGoalLbl').textContent     = '/ ' + goals.fat     + 'г';
+    document.getElementById('carbGoalLbl').textContent    = '/ ' + goals.carbs   + 'г';
+    document.getElementById('proteinBar').style.width = Math.min(100, goals.protein > 0 ? td.protein / goals.protein * 100 : 0) + '%';
+    document.getElementById('fatBar').style.width     = Math.min(100, goals.fat     > 0 ? td.fat     / goals.fat     * 100 : 0) + '%';
+    document.getElementById('carbBar').style.width    = Math.min(100, goals.carbs   > 0 ? td.carbs   / goals.carbs   * 100 : 0) + '%';
+
+    document.getElementById('waterAmount').textContent  = td.water;
+    document.getElementById('waterGoalLbl').textContent = waterGoal;
+    document.getElementById('waterBar').style.width     = Math.min(100, td.water / waterGoal * 100) + '%';
+
+    AITips.render(td, p, goals, balance);
+    Achievements.check(td, p);
+  }
+};
+
+/* ================================================================
+   AI-СОВЕТЫ
+================================================================ */
+const AITips = {
+  render(td, p, goals, balance) {
+    const tips = [];
+    const hour = new Date().getHours();
+
+    if (!p.targetCalories) {
+      tips.push({ cls:'info', icon:'👤', text:'Заполни профиль для персональных советов' });
+    } else {
+      const proteinPct = goals.protein > 0 ? td.protein / goals.protein : 0;
+      if (proteinPct < 0.5 && td.calories > 0)
+        tips.push({ cls:'warn', icon:'🍗', text:`Белков мало: ${td.protein}г из ${goals.protein}г. Добавь творог, яйца или куриную грудку.` });
+      else if (proteinPct >= 1)
+        tips.push({ cls:'', icon:'✅', text:`Отлично! Белков достаточно — ${td.protein}г из ${goals.protein}г.` });
+
+      const waterPct = td.water / (p.waterGoal || 2000);
+      if (waterPct < 0.5 && hour >= 12)
+        tips.push({ cls:'warn', icon:'💧', text:`Выпито только ${td.water}мл. Не забывай пить воду каждый час!` });
+
+      if (balance > 500)
+        tips.push({ cls:'danger', icon:'⚠️', text:`Профицит ${balance} ккал — это много. Прогулка 30 мин сожжёт ~${Math.round(Calc.burnedByMet('walk', p.weight||70, 30))} ккал.` });
+      else if (td.calories === 0 && hour >= 14)
+        tips.push({ cls:'warn', icon:'🍽', text:'Ничего не записано. Не забывай вносить еду в дневник!' });
+      else if (balance < 0 && p.goal === 'cut' && balance >= -600)
+        tips.push({ cls:'', icon:'🎯', text:`Дефицит ${Math.abs(balance)} ккал — ты на верном пути к похудению!` });
+      else if (balance < -700)
+        tips.push({ cls:'warn', icon:'😬', text:`Дефицит ${Math.abs(balance)} ккал — слишком мало. Норма дефицита: 300–500 ккал.` });
+
+      if (!td.workouts.length)
+        tips.push({ cls:'info', icon:'🏋️', text:'Даже 20-минутная прогулка засчитается!' });
+
+      if (hour >= 21 && td.calories > 0)
+        tips.push({ cls:'info', icon:'🌙', text:'Отличный день! Не забудь выпить воды перед сном и отдохнуть 7–8 часов.' });
+    }
+
+    const container = document.getElementById('aiTips');
+    if (!tips.length) { container.innerHTML = '<div class="empty-state">Всё отлично! 🎉</div>'; return; }
+    container.innerHTML = tips.map(t =>
+      `<div class="ai-tip ${t.cls}"><div class="ai-tip-icon">${t.icon}</div><div>${t.text}</div></div>`
+    ).join('');
+  }
+};
+
+/* ================================================================
+   ЕДА
+================================================================ */
+const Food = {
+  _searchTimer: null,
+
+  add(name, cal, protein, fat, carb, grams) {
+    name    = name    !== undefined ? name    : document.getElementById('f_name').value.trim();
+    cal     = cal     !== undefined ? cal     : +document.getElementById('f_cal').value || 0;
+    protein = protein !== undefined ? protein : +document.getElementById('f_protein').value || 0;
+    fat     = fat     !== undefined ? fat     : +document.getElementById('f_fat').value || 0;
+    carb    = carb    !== undefined ? carb    : +document.getElementById('f_carb').value || 0;
+    grams   = grams   !== undefined ? grams   : +document.getElementById('f_grams').value || 0;
+    const meal = document.getElementById('f_meal').value;
+
+    if (!name || !cal) { UI.toast('Введи название и калории!', 'var(--danger)'); return; }
+
+    const item = {
+      id: Date.now(), name, cal, protein, fat, carb, grams, meal,
+      time: new Date().toLocaleTimeString('ru', { hour:'2-digit', minute:'2-digit' })
+    };
+
+    const td = TodayData.data;
+    td.foods.push(item);
+    td.calories += cal; td.protein += protein; td.fat += fat; td.carbs += carb;
+    TodayData.save();
+
+    ['f_name','f_cal','f_protein','f_fat','f_carb','f_grams'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.getElementById('foodSearch').value = '';
+
+    this.render();
+    Dashboard.update();
+    UI.toast('✅ ' + name);
+  },
+
+  delete(id) {
+    const td = TodayData.data;
+    const item = td.foods.find(f => f.id === id);
+    if (!item) return;
+    td.foods = td.foods.filter(f => f.id !== id);
+    td.calories -= item.cal; td.protein -= item.protein;
+    td.fat -= item.fat; td.carbs -= item.carb;
+    TodayData.save(); this.render(); Dashboard.update();
+  },
+
+  render() {
+    const list = document.getElementById('foodList');
+    const td = TodayData.data;
+    const meals = { breakfast:'🌅', lunch:'☀️', dinner:'🌙', snack:'🍎' };
+    if (!td.foods.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🍽</div><div>Ничего не добавлено</div></div>';
+      return;
+    }
+    list.innerHTML = td.foods.map(f => `
+      <div class="food-item">
+        <div style="flex:1;min-width:0">
+          <div class="food-item-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${f.name}</div>
+          <div class="food-item-meta">${meals[f.meal]||''} ${f.time} · Б${f.protein}г Ж${f.fat}г У${f.carb}г${f.grams?' · '+f.grams+'г':''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <div class="food-item-kcal">${f.cal}</div>
+          <button class="food-del" data-id="${f.id}">×</button>
+        </div>
+      </div>
+    `).join('');
+
+    /* ✅ ИСПРАВЛЕНИЕ: вешаем обработчики удаления через JS, а не через onclick в HTML */
+    list.querySelectorAll('.food-del').forEach(btn => {
+      btn.addEventListener('click', () => Food.delete(+btn.dataset.id));
+    });
+  },
+
+  onSearchInput(query) {
+    clearTimeout(this._searchTimer);
+    const res = document.getElementById('searchResults');
+    if (query.length < 2) { res.style.display = 'none'; return; }
+    this._searchTimer = setTimeout(() => this._doSearch(query), 500);
+  },
+
+  async _doSearch(query) {
+    const res = document.getElementById('searchResults');
+    res.style.display = 'block';
+    res.innerHTML = '<div class="search-loader">🔍 Поиск...</div>';
+    try {
+      const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&lc=ru&action=process&json=1&page_size=8`;
+      const r = await fetch(url);
+      const data = await r.json();
+      const products = (data.products || []).filter(p =>
+        p.product_name && p.nutriments && p.nutriments['energy-kcal_100g']
+      );
+      if (!products.length) {
+        res.innerHTML = '<div class="search-loader">Ничего не найдено. Введи вручную.</div>';
+        return;
+      }
+      res.innerHTML = products.slice(0, 7).map(p => {
+        const kcal = Math.round(p.nutriments['energy-kcal_100g'] || 0);
+        const prot = Math.round(p.nutriments.proteins_100g || 0);
+        const fat  = Math.round(p.nutriments.fat_100g || 0);
+        const carb = Math.round(p.nutriments.carbohydrates_100g || 0);
+        const name = p.product_name.substring(0, 50);
+        /* ✅ ИСПРАВЛЕНИЕ: используем data-атрибуты вместо onclick со строками */
+        return `<div class="search-item" data-name="${name.replace(/"/g,'&quot;')}" data-kcal="${kcal}" data-prot="${prot}" data-fat="${fat}" data-carb="${carb}">
+          <div class="search-item-name">${name}</div>
+          <div class="search-item-meta">${kcal} ккал / 100г · Б:${prot}г Ж:${fat}г У:${carb}г</div>
+        </div>`;
+      }).join('');
+
+      res.querySelectorAll('.search-item').forEach(item => {
+        item.addEventListener('click', () => {
+          Food.selectProduct(item.dataset.name, +item.dataset.kcal, +item.dataset.prot, +item.dataset.fat, +item.dataset.carb);
+        });
+      });
+    } catch {
+      res.innerHTML = '<div class="search-loader">Нет соединения. Введи вручную.</div>';
+    }
+  },
+
+  selectProduct(name, cal100, prot100, fat100, carb100) {
+    document.getElementById('f_name').value    = name;
+    document.getElementById('f_cal').value     = cal100;
+    document.getElementById('f_protein').value = prot100;
+    document.getElementById('f_fat').value     = fat100;
+    document.getElementById('f_carb').value    = carb100;
+    document.getElementById('f_grams').value   = 100;
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('foodSearch').value = '';
+    UI.toast('📋 Заполнено — проверь порцию!');
+  }
+};
+
+/* ================================================================
+   ВОДА
+================================================================ */
+const Water = {
+  add(ml) {
+    TodayData.data.water += ml;
+    TodayData.save();
+    Dashboard.update();
+    UI.toast('💧 +' + ml + ' мл');
+  }
+};
+
+/* ================================================================
+   ТРЕНИРОВКИ
+================================================================ */
+const Workout = {
+  TYPE_NAMES: {
+    gym:'💪 Силовая', run:'🏃 Бег', bike:'🚴 Велосипед',
+    swim:'🏊 Плавание', yoga:'🧘 Йога', hiit:'⚡ HIIT',
+    walk:'🚶 Ходьба', other:'💪 Другое'
+  },
+
+  autoCalc() {
+    const type = document.getElementById('w_type').value;
+    const dur  = +document.getElementById('w_duration').value;
+    const wt   = Profile.data.weight || 75;
+    if (dur > 0) document.getElementById('w_burned').value = Calc.burnedByMet(type, wt, dur);
+  },
+
+  add() {
+    const type     = document.getElementById('w_type').value;
+    const duration = +document.getElementById('w_duration').value;
+    const burned   = +document.getElementById('w_burned').value;
+    const notes    = document.getElementById('w_notes').value;
+    if (!duration) { UI.toast('Введи длительность!', 'var(--danger)'); return; }
+
+    const item = {
+      id: Date.now(), type, typeName: this.TYPE_NAMES[type],
+      duration, burned, notes,
+      time: new Date().toLocaleTimeString('ru', { hour:'2-digit', minute:'2-digit' })
+    };
+
+    TodayData.data.workouts.push(item);
+    TodayData.save();
+    this.render();
+    Dashboard.update();
+    UI.toast('✅ Тренировка добавлена!');
+    ['w_duration','w_burned','w_notes'].forEach(id => { document.getElementById(id).value = ''; });
+  },
+
+  render() {
+    const list = document.getElementById('workoutList');
+    const ws   = TodayData.data.workouts;
+    if (!ws.length) {
+      list.innerHTML = '<div class="empty-state"><div class="empty-icon">🏋️</div><div>Тренировок ещё нет</div></div>';
+      return;
+    }
+    list.innerHTML = ws.map(w => `
+      <div class="workout-item">
+        <div class="workout-name">${w.typeName}</div>
+        <div class="workout-meta">${w.time}${w.notes ? ' · ' + w.notes : ''}</div>
+        <div class="workout-stats">
+          <span class="workout-stat">⏱ ${w.duration} мин</span>
+          ${w.burned ? `<span class="workout-stat">🔥 ${w.burned} ккал</span>` : ''}
+        </div>
+      </div>
+    `).join('');
+  }
+};
+
+/* ================================================================
+   ТАЙМЕР
+================================================================ */
+const Timer = {
+  sec: 0, running: false, interval: null,
+
+  toggle() {
+    if (this.running) {
+      clearInterval(this.interval); this.running = false;
+      document.getElementById('timerBtn').textContent = '▶ Продолжить';
+    } else {
+      this.interval = setInterval(() => { this.sec++; this._render(); }, 1000);
+      this.running = true;
+      document.getElementById('timerBtn').textContent = '⏸ Пауза';
+    }
+  },
+  reset() {
+    clearInterval(this.interval); this.running = false; this.sec = 0;
+    this._render(); document.getElementById('timerBtn').textContent = '▶ Старт';
+  },
+  _render() {
+    const m = String(Math.floor(this.sec / 60)).padStart(2,'0');
+    const s = String(this.sec % 60).padStart(2,'0');
+    document.getElementById('timerDisplay').textContent = m + ':' + s;
+  }
+};
+
+/* ================================================================
+   ЗАМЕРЫ ТЕЛА
+================================================================ */
+const Measures = {
+  data: Storage.get('fittrack_measures', []),
+
+  add() {
+    const entry = {
+      date: new Date().toLocaleDateString('ru', { day:'2-digit', month:'2-digit', year:'2-digit' }),
+      ts:   Date.now(),
+      weight: +document.getElementById('ms_weight').value || null,
+      fatPct: +document.getElementById('ms_fat_pct').value || null,
+      chest:  +document.getElementById('ms_chest').value  || null,
+      waist:  +document.getElementById('ms_waist').value  || null,
+      hips:   +document.getElementById('ms_hips').value   || null,
+      arm:    +document.getElementById('ms_arm').value    || null,
+      leg:    +document.getElementById('ms_leg').value    || null,
+      note:   document.getElementById('ms_note').value    || ''
+    };
+    const hasValue = entry.weight || entry.fatPct || entry.chest || entry.waist || entry.hips || entry.arm || entry.leg;
+    if (!hasValue) { UI.toast('Введи хотя бы одно значение!', 'var(--danger)'); return; }
+
+    this.data.push(entry);
+    if (this.data.length > 200) this.data = this.data.slice(-200);
+    Storage.set('fittrack_measures', this.data);
+
+    ['ms_weight','ms_fat_pct','ms_chest','ms_waist','ms_hips','ms_arm','ms_leg','ms_note']
+      .forEach(id => { document.getElementById(id).value = ''; });
+
+    this.renderAll();
+    UI.toast('📏 Замеры сохранены!');
+    Achievements.unlock('measure');
+  },
+
+  renderAll() {
+    this._renderCards();
+    this._renderTable();
+    this._renderCharts();
+  },
+
+  _renderCards() {
+    if (!this.data.length) return;
+    const last = this.data[this.data.length - 1];
+    const prev = this.data.length > 1 ? this.data[this.data.length - 2] : null;
+    const fields = [
+      { key:'weight', id:'mw',  good:'down' },
+      { key:'chest',  id:'mch', good:'up'   },
+      { key:'waist',  id:'mwa', good:'down' },
+      { key:'hips',   id:'mhi', good:'any'  },
+      { key:'arm',    id:'mar', good:'up'   },
+      { key:'leg',    id:'mle', good:'up'   }
+    ];
+    fields.forEach(f => {
+      const cur = last[f.key], prv = prev ? prev[f.key] : null;
+      document.getElementById(f.id + '-cur').textContent = cur ?? '—';
+      const chEl = document.getElementById(f.id + '-ch');
+      if (cur && prv) {
+        const diff = +(cur - prv).toFixed(1);
+        const sign = diff > 0 ? '+' : '';
+        const cls  = diff === 0 ? 'change-neutral'
+          : (f.good === 'down' ? (diff < 0 ? 'change-good' : 'change-bad')
+          :  f.good === 'up'   ? (diff > 0 ? 'change-good' : 'change-bad')
+          : 'change-neutral');
+        chEl.textContent = sign + diff;
+        chEl.className = 'measure-change ' + cls;
+      }
+    });
+  },
+
+  _renderTable() {
+    const tbody = document.getElementById('measuresTableBody');
+    if (!this.data.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Нет данных</td></tr>'; return; }
+    tbody.innerHTML = [...this.data].reverse().slice(0,20).map(r => `
+      <tr>
+        <td>${r.date}</td><td>${r.weight ?? '—'}</td><td>${r.waist ?? '—'}</td>
+        <td>${r.chest ?? '—'}</td><td>${r.hips ?? '—'}</td>
+      </tr>
+    `).join('');
+  },
+
+  _chartsInst: {},
+
+  _renderCharts() {
+    if (!this.data.length) return;
+    const labels  = this.data.map(r => r.date);
+    const weights = this.data.map(r => r.weight);
+    const ma7     = Calc.movingAverage(weights, 7);
+    const waists  = this.data.map(r => r.waist);
+    const chests  = this.data.map(r => r.chest);
+    const hips    = this.data.map(r => r.hips);
+
+    const base = {
+      responsive: true,
+      plugins: { legend: { labels: { color:'#7a8299', font:{ family:'Manrope', size:11 } } } },
+      scales: {
+        x: { ticks:{ color:'#7a8299', maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+        y: { ticks:{ color:'#7a8299' }, grid:{ color:'rgba(255,255,255,0.04)' } }
+      }
+    };
+
+    if (this._chartsInst.mw) this._chartsInst.mw.destroy();
+    this._chartsInst.mw = new Chart(document.getElementById('measureWeightChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label:'Вес (кг)', data:weights, borderColor:'rgba(0,229,160,0.4)', backgroundColor:'rgba(0,229,160,0.05)',
+          tension:0.3, pointRadius:4, pointBackgroundColor:'#00e5a0', fill:true },
+        { label:'Среднее 7дн', data:ma7, borderColor:'#00e5a0', backgroundColor:'transparent',
+          tension:0.5, pointRadius:0, borderWidth:2.5 }
+      ]},
+      options: base
+    });
+
+    if (this._chartsInst.ms) this._chartsInst.ms.destroy();
+    this._chartsInst.ms = new Chart(document.getElementById('measureSizeChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label:'Талия', data:waists, borderColor:'#ff6b6b', tension:0.3, pointRadius:3, fill:false },
+        { label:'Грудь', data:chests, borderColor:'#0088ff', tension:0.3, pointRadius:3, fill:false },
+        { label:'Бёдра', data:hips,   borderColor:'#a855f7', tension:0.3, pointRadius:3, fill:false }
+      ]},
+      options: base
+    });
+  }
+};
+
+/* ================================================================
+   ГРАФИКИ
+================================================================ */
+const Charts = {
+  _inst: {},
+
+  render() {
+    const hist = Storage.get('fittrack_history', []);
+    if (!hist.length) return;
+    const labels   = hist.map(h => h.date);
+    const calories = hist.map(h => h.calories || 0);
+    const waters   = hist.map(h => h.water || 0);
+    const weights  = hist.map(h => h.weight || 0);
+    const ma7      = Calc.movingAverage(weights, 7);
+    const target   = Profile.data.targetCalories || 2000;
+    const wGoal    = Profile.data.waterGoal      || 2000;
+
+    const base = {
+      responsive: true,
+      plugins: { legend: { labels: { color:'#7a8299', font:{ family:'Manrope', size:11 } } } },
+      scales: {
+        x: { ticks:{ color:'#7a8299', maxRotation:45 }, grid:{ color:'rgba(255,255,255,0.04)' } },
+        y: { ticks:{ color:'#7a8299' }, grid:{ color:'rgba(255,255,255,0.04)' } }
+      }
+    };
+
+    if (this._inst.cal) this._inst.cal.destroy();
+    this._inst.cal = new Chart(document.getElementById('calorieChart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label:'Калории', data:calories, backgroundColor:'rgba(0,136,255,0.55)',
+          borderColor:'#0088ff', borderRadius:5 },
+        { label:'Цель', data:labels.map(() => target), type:'line',
+          borderColor:'rgba(0,229,160,0.7)', borderWidth:2, borderDash:[6,4],
+          pointRadius:0, fill:false }
+      ]},
+      options: base
+    });
+
+    if (this._inst.water) this._inst.water.destroy();
+    this._inst.water = new Chart(document.getElementById('waterChart'), {
+      type: 'bar',
+      data: { labels, datasets: [
+        { label:'Вода (мл)', data:waters, backgroundColor:'rgba(0,180,255,0.5)',
+          borderColor:'#00b4ff', borderRadius:5 },
+        { label:'Норма', data:labels.map(() => wGoal), type:'line',
+          borderColor:'rgba(0,136,255,0.7)', borderWidth:2, borderDash:[6,4],
+          pointRadius:0, fill:false }
+      ]},
+      options: base
+    });
+
+    if (this._inst.weight) this._inst.weight.destroy();
+    this._inst.weight = new Chart(document.getElementById('weightChart'), {
+      type: 'line',
+      data: { labels, datasets: [
+        { label:'Вес (кг)', data:weights, borderColor:'rgba(0,229,160,0.35)',
+          backgroundColor:'rgba(0,229,160,0.05)', tension:0.3, pointRadius:3,
+          pointBackgroundColor:'#00e5a0', fill:true },
+        { label:'Среднее 7 дней', data:ma7, borderColor:'#00e5a0',
+          backgroundColor:'transparent', tension:0.5, pointRadius:0, borderWidth:2.5 }
+      ]},
+      options: base
+    });
+  }
+};
+
+/* ================================================================
+   ДОСТИЖЕНИЯ
+================================================================ */
+const Achievements = {
+  _earned: Storage.get('fittrack_achievements', []),
+
+  unlock(id) {
+    if (this._earned.includes(id)) return;
+    this._earned.push(id);
+    Storage.set('fittrack_achievements', this._earned);
+    const el = document.getElementById('ach-' + id);
+    if (el) { el.classList.add('earned'); UI.toast('🏆 Ачивка разблокирована!'); }
+  },
+
+  applyAll() {
+    this._earned.forEach(id => document.getElementById('ach-' + id)?.classList.add('earned'));
+  },
+
+  check(td, p) {
+    if (td.foods.length > 0) this.unlock('first');
+    if (td.water >= (p.waterGoal || 2000)) this.unlock('water');
+    const target = p.targetCalories || 2000;
+    const pct = td.calories / target;
+    if (pct >= 0.9 && pct <= 1.05) this.unlock('calories');
+    if (pct >= 0.9 && pct <= 1.05 && td.water >= (p.waterGoal || 2000)) this.unlock('perfect');
+    const hist = Storage.get('fittrack_history', []);
+    const streak = Calc.streak(hist);
+    if (streak >= 7)  this.unlock('streak7');
+    if (streak >= 30) this.unlock('streak30');
+    document.getElementById('streakBadge').textContent = '🔥 ' + streak + ' дн';
+  }
+};
+
+/* ================================================================
+   UI — переключение вкладок и тост
+================================================================ */
+const UI = {
+  showTab(tab, btn) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    if (tab === 'stats')    Charts.render();
+    if (tab === 'measures') Measures.renderAll();
+  },
+
+  toast(msg, color) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = color || 'var(--accent)';
+    t.style.color      = color ? 'white' : '#061a10';
+    t.style.boxShadow  = color ? 'none'  : '0 8px 24px rgba(0,229,160,0.3)';
+    t.classList.add('show');
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+};
+
+/* ================================================================
+   НАВЕШИВАЕМ ВСЕ ОБРАБОТЧИКИ КНОПОК ЧЕРЕЗ JS
+   ✅ Главное исправление — убираем все onclick из HTML
+   и вешаем через addEventListener. Это работает везде,
+   в том числе в Telegram WebApp где onclick часто блокируется.
+================================================================ */
+function bindEvents() {
+  /* Навигация */
+  document.querySelectorAll('.nav-btn').forEach(btn => {
+    btn.addEventListener('click', () => UI.showTab(btn.dataset.tab, btn));
+  });
+
+  /* Кнопки воды */
+  document.getElementById('wBtn150').addEventListener('click', () => Water.add(150));
+  document.getElementById('wBtn250').addEventListener('click', () => Water.add(250));
+  document.getElementById('wBtn350').addEventListener('click', () => Water.add(350));
+  document.getElementById('wBtn500').addEventListener('click', () => Water.add(500));
+
+  /* Питание */
+  document.getElementById('addFoodBtn').addEventListener('click', () => Food.add());
+  document.getElementById('foodSearch').addEventListener('input', e => Food.onSearchInput(e.target.value));
+
+  /* Тренировки */
+  document.getElementById('addWorkoutBtn').addEventListener('click', () => Workout.add());
+  document.getElementById('w_type').addEventListener('change', () => Workout.autoCalc());
+  document.getElementById('w_duration').addEventListener('input', () => Workout.autoCalc());
+  document.getElementById('timerBtn').addEventListener('click', () => Timer.toggle());
+  document.getElementById('timerResetBtn').addEventListener('click', () => Timer.reset());
+
+  /* Замеры */
+  document.getElementById('addMeasureBtn').addEventListener('click', () => Measures.add());
+
+  /* Профиль */
+  document.getElementById('saveProfileBtn').addEventListener('click', () => Profile.save());
+
+  /* Закрытие поиска при клике вне */
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.search-wrap'))
+      document.getElementById('searchResults').style.display = 'none';
+  });
+}
+
+/* ================================================================
+   ИНИЦИАЛИЗАЦИЯ
+================================================================ */
+(function init() {
+  /* Telegram WebApp */
+  try {
+    const tg = window.Telegram?.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+  } catch(e) {}
+
+  /* Дата в шапке */
+  document.getElementById('headerDate').textContent =
+    new Date().toLocaleDateString('ru', { weekday:'short', day:'numeric', month:'short' });
+
+  /* Приветствие */
+  const hour = new Date().getHours();
+  const greetings = [[5,'🌙 Ранний подъём!'],[12,'☀️ Доброе утро!'],[17,'🌤 Добрый день!'],[21,'🌆 Добрый вечер!'],[25,'🌙 Поздний вечер...']];
+  document.getElementById('greetTitle').textContent = greetings.find(([h]) => hour < h)?.[1] ?? 'Привет!';
+  const subs = ['Доброе утро! Не забудь завтрак','Добрый день! Держим ритм 💪','Добрый вечер! Подводим итоги','Отдыхай, завтра будет новый день'];
+  document.getElementById('homeGreet').textContent = subs[Math.min(3, Math.floor(hour / 6))];
+
+  /* Данные */
+  TodayData.init();
+  Profile.load();
+
+  /* ✅ Вешаем все обработчики */
+  bindEvents();
+
+  /* Рендер */
+  Food.render();
+  Workout.render();
+  Dashboard.update();
+  Achievements.applyAll();
+  Measures.renderAll();
+})();
+</script>
+</body>
+</html>
